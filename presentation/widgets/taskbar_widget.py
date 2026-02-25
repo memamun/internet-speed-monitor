@@ -206,38 +206,24 @@ class TaskbarWidget:
             5, 29, 11, 35, fill=self.ul_color, outline="")
 
         # Ensure columns don't collapse and assign appropriate weights
-        # Icon canvas, then right-aligned numbers, then left-aligned units
         container.columnconfigure(0, weight=0)
-        container.columnconfigure(1, weight=0, minsize=40)
-        container.columnconfigure(2, weight=1)
+        container.columnconfigure(1, weight=1)
 
-        # Download row text (Top)
-        self.dl_num = tk.Label(
-            container, text="0", font=sys_font,
-            fg=self.text_color, bg=self.bg_color,
-            anchor="e", bd=0, pady=0
-        )
-        self.dl_num.grid(row=0, column=1, sticky="e", pady=(0, 0), padx=(0, 2))
-        self.dl_unit = tk.Label(
-            container, text="B/s", font=sys_font,
+        # Upload row (Bottom)
+        self.ul_val = tk.Label(
+            container, text="0 B/s", font=sys_font,
             fg=self.text_color, bg=self.bg_color,
             anchor="w", bd=0, pady=0
         )
-        self.dl_unit.grid(row=0, column=2, sticky="w", pady=(0, 0))
+        self.ul_val.grid(row=0, column=1, sticky="w", padx=(0, 2), pady=0)
 
-        # Upload row text (Bottom)
-        self.ul_num = tk.Label(
-            container, text="0", font=sys_font,
-            fg=self.text_color, bg=self.bg_color,
-            anchor="e", bd=0, pady=0
-        )
-        self.ul_num.grid(row=1, column=1, sticky="e", pady=(0, 0), padx=(0, 2))
-        self.ul_unit = tk.Label(
-            container, text="B/s", font=sys_font,
+        # Download row (Top)
+        self.dl_val = tk.Label(
+            container, text="0 B/s", font=sys_font,
             fg=self.text_color, bg=self.bg_color,
             anchor="w", bd=0, pady=0
         )
-        self.ul_unit.grid(row=1, column=2, sticky="w", pady=(0, 0))
+        self.dl_val.grid(row=1, column=1, sticky="w", padx=(0, 2), pady=0)
 
         # Context menu
         self.menu = tk.Menu(
@@ -267,7 +253,7 @@ class TaskbarWidget:
         self.menu.add_separator()
         self.menu.add_command(label="Exit", command=self.exit_app)
 
-        for w in (container, self.ul_num, self.ul_unit, self.dl_num, self.dl_unit):
+        for w in (container, self.ul_val, self.dl_val):
             w.bind("<Button-3>", self._show_menu)
 
     def _show_menu(self, e: tk.Event) -> None:
@@ -292,14 +278,14 @@ class TaskbarWidget:
     # ── Speed callback ───────────────────────────────────────────────────────
 
     @staticmethod
-    def _fmt(bps: int) -> tuple[str, str]:
+    def _fmt(bps: int) -> str:
         if bps >= 1024 ** 3:
-            return f"{bps / 1024**3:.2f}", "GB/s"
+            return f"{bps / 1024**3:.2f} GB/s"
         if bps >= 1024 ** 2:
-            return f"{bps / 1024**2:.2f}", "MB/s"
+            return f"{bps / 1024**2:.2f} MB/s"
         if bps >= 1024:
-            return f"{bps / 1024:.2f}", "KB/s"
-        return f"{bps:.0f}", "B/s"
+            return f"{bps / 1024:.2f} KB/s"
+        return f"{bps:.0f}  B/s"
 
     def _on_speed(self, snap: SpeedSnapshot) -> None:
         try:
@@ -309,13 +295,8 @@ class TaskbarWidget:
 
     def _update_labels(self, snap: SpeedSnapshot) -> None:
         try:
-            ul_n, ul_u = self._fmt(snap.up_speed)
-            dl_n, dl_u = self._fmt(snap.down_speed)
-
-            self.ul_num.config(text=ul_n)
-            self.ul_unit.config(text=ul_u)
-            self.dl_num.config(text=dl_n)
-            self.dl_unit.config(text=dl_u)
+            self.ul_val.config(text=self._fmt(snap.up_speed))
+            self.dl_val.config(text=self._fmt(snap.down_speed))
         except tk.TclError:
             pass
 

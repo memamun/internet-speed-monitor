@@ -23,85 +23,90 @@ class SettingsWindow:
 
         self.window = tk.Toplevel(parent)
         self.window.title("Settings - Net Speed Meter")
-        self.window.geometry("800x600")
-        self.window.configure(bg="#2b2b2b")
+        self.window.geometry("600x650")
+        self.window.configure(bg="#121212")
         self.window.attributes("-topmost", True)
 
-        self._setup_styles()
+        # Remove default focus
+        self.window.focus_force()
+
+        # Define Colors
+        self.bg_primary = "#121212"
+        self.bg_card = "#1e1e1e"
+        self.text_primary = "#ffffff"
+        self.text_secondary = "#a0a0a0"
+        self.accent_color = "#1e88e5"
+
         self._build_ui()
         self._load_current_settings()
 
-    def _setup_styles(self):
-        style = ttk.Style(self.window)
-        style.theme_use("clam")
-
-        style.configure(
-            "Header.TLabel",
-            background="#1e88e5",
-            foreground="white",
-            font=("Segoe UI", 12, "bold"),
-            padding=10
-        )
-        style.configure("Dark.TFrame", background="#2b2b2b")
-        style.configure(
-            "Setting.TLabel",
-            background="#2b2b2b",
-            foreground="white",
-            font=("Segoe UI", 10)
-        )
-        style.configure(
-            "Settings.TCheckbutton",
-            background="#2b2b2b",
-            foreground="white"
-        )
+    def _build_header(self, parent, text):
+        lbl = tk.Label(parent, text=text, bg=self.bg_card, fg=self.text_primary,
+                       font=("Segoe UI", 12, "bold"), anchor="w", padx=15, pady=10)
+        lbl.pack(fill="x")
+        # separator line
+        tk.Frame(parent, bg="#333333", height=1).pack(fill="x")
 
     def _build_ui(self):
-        main_frame = ttk.Frame(self.window, style="Dark.TFrame", padding=10)
-        main_frame.pack(fill="both", expand=True)
+        # Container with padding
+        main_container = tk.Frame(self.window, bg=self.bg_primary, padx=20, pady=20)
+        main_container.pack(fill="both", expand=True)
 
-        # --- General Settings Section ---
-        ttk.Label(main_frame, text="General Settings",
-                  style="Header.TLabel").pack(fill="x", pady=(0, 10))
+        # Title
+        tk.Label(
+            main_container, text="Settings", bg=self.bg_primary, fg=self.text_primary,
+            font=("Segoe UI", 20, "bold"), anchor="w"
+        ).pack(fill="x", pady=(0, 20))
 
-        gen_frame = ttk.Frame(main_frame, style="Dark.TFrame")
-        gen_frame.pack(fill="x", padx=20, pady=5)
+        # --- General Settings Card ---
+        gen_card = tk.Frame(main_container, bg=self.bg_card, highlightbackground="#333333", highlightthickness=1)
+        gen_card.pack(fill="x", pady=(0, 20))
 
-        # Floating Widget Toggle
+        self._build_header(gen_card, "General")
+
+        content_gen = tk.Frame(gen_card, bg=self.bg_card, padx=20, pady=15)
+        content_gen.pack(fill="x")
+
+        # Toggles
+        toggle_frame = tk.Frame(content_gen, bg=self.bg_card)
+        toggle_frame.pack(fill="x", pady=(0, 15))
+
         self.var_floating = tk.BooleanVar()
-        cb_floating = ttk.Checkbutton(
-            gen_frame, text="Enable Floating Desktop Widget",
-            variable=self.var_floating, style="Settings.TCheckbutton"
-        )
-        cb_floating.grid(row=0, column=0, sticky="w", pady=5)
+        tk.Checkbutton(
+            toggle_frame, text="Enable Floating Desktop Widget", variable=self.var_floating,
+            bg=self.bg_card, fg=self.text_primary, selectcolor=self.bg_primary,
+            activebackground=self.bg_card, activeforeground=self.text_primary,
+            font=("Segoe UI", 10)
+        ).pack(side="left")
 
-        # Run at Startup Toggle
         self.var_startup = tk.BooleanVar()
-        cb_startup = ttk.Checkbutton(
-            gen_frame, text="Run at Windows Startup",
-            variable=self.var_startup, style="Settings.TCheckbutton"
-        )
-        cb_startup.grid(row=0, column=1, sticky="w", padx=40, pady=5)
+        tk.Checkbutton(
+            toggle_frame, text="Run at Windows Startup", variable=self.var_startup,
+            bg=self.bg_card, fg=self.text_primary, selectcolor=self.bg_primary,
+            activebackground=self.bg_card, activeforeground=self.text_primary,
+            font=("Segoe UI", 10)
+        ).pack(side="right")
 
-        # Font
-        ttk.Label(gen_frame, text="Font Family:", style="Setting.TLabel").grid(
-            row=1, column=0, sticky="w", pady=10)
+        # Typography
+        typo_frame = tk.Frame(content_gen, bg=self.bg_card)
+        typo_frame.pack(fill="x")
+
+        tk.Label(typo_frame, text="Font Family:", bg=self.bg_card, fg=self.text_secondary, font=("Segoe UI", 10)).grid(row=0, column=0, sticky="w", pady=5, padx=(0, 10))
         self.var_font = tk.StringVar()
-        font_combo = ttk.Combobox(gen_frame, textvariable=self.var_font, values=[
-                                  "Segoe UI", "Arial", "Consolas"])
-        font_combo.grid(row=1, column=0, sticky="w", padx=(100, 0))
+        ttk.Combobox(typo_frame, textvariable=self.var_font, values=["Segoe UI", "Arial", "Consolas"], width=20).grid(row=0, column=1, sticky="w", padx=(0, 30))
 
-        ttk.Label(gen_frame, text="Font Size:", style="Setting.TLabel").grid(
-            row=1, column=1, sticky="w", padx=40)
+        tk.Label(typo_frame, text="Font Size:", bg=self.bg_card, fg=self.text_secondary, font=("Segoe UI", 10)).grid(row=0, column=2, sticky="w", pady=5, padx=(0, 10))
         self.var_size = tk.IntVar()
-        ttk.Spinbox(gen_frame, from_=8, to=24, textvariable=self.var_size, width=5).grid(
-            row=1, column=1, sticky="w", padx=(120, 0))
+        ttk.Spinbox(typo_frame, from_=8, to=24, textvariable=self.var_size, width=8).grid(row=0, column=3, sticky="w")
 
-        # --- Colors Section ---
-        ttk.Label(main_frame, text="Custom Theme Colors",
-                  style="Header.TLabel").pack(fill="x", pady=(20, 10))
+        # --- Colors Section Card ---
+        color_card = tk.Frame(main_container, bg=self.bg_card, highlightbackground="#333333", highlightthickness=1)
+        color_card.pack(fill="x", pady=(0, 20))
 
-        color_frame = ttk.Frame(main_frame, style="Dark.TFrame")
-        color_frame.pack(fill="x", padx=20)
+        self._build_header(color_card, "Appearance & Colors")
+
+        content_color = tk.Frame(color_card, bg=self.bg_card, padx=20, pady=15)
+        content_color.pack(fill="x")
 
         self.color_vars = {
             "bg_color": tk.StringVar(),
@@ -110,48 +115,46 @@ class SettingsWindow:
             "text_color": tk.StringVar()
         }
 
-        self._add_color_picker(
-            color_frame, "Background Color:", "bg_color", 0, 0)
-        self._add_color_picker(
-            color_frame, "Download Icon Color:", "dl_color", 1, 0)
-        self._add_color_picker(
-            color_frame, "Upload Icon Color:", "ul_color", 0, 1)
-        self._add_color_picker(color_frame, "Text Color:", "text_color", 1, 1)
+        # Grid for colors
+        self._add_color_picker(content_color, "Background Color", "bg_color", 0, 0)
+        self._add_color_picker(content_color, "Text Color", "text_color", 0, 1)
+        self._add_color_picker(content_color, "Upload Icon Color", "ul_color", 1, 0)
+        self._add_color_picker(content_color, "Download Icon Color", "dl_color", 1, 1)
 
-        # --- Footer Buttons ---
-        btn_frame = ttk.Frame(self.window, style="Dark.TFrame")
-        btn_frame.pack(side="bottom", fill="x", pady=20, padx=20)
+        # --- Footer ---
+        footer = tk.Frame(main_container, bg=self.bg_primary)
+        footer.pack(fill="x", side="bottom")
 
-        btn_apply = tk.Button(btn_frame, text="Apply Changes", bg="#2ecc71", fg="white", font=(
-            "Segoe UI", 10, "bold"), bd=0, px=20, py=8, command=self._apply_changes)
-        btn_apply.pack(side="left", padx=5)
+        tk.Button(
+            footer, text="Save & Apply", bg="#2ecc71", fg="#ffffff", font=("Segoe UI", 10, "bold"),
+            bd=0, padx=20, pady=8, cursor="hand2", command=self._apply_changes
+        ).pack(side="right", padx=(10, 0))
 
-        btn_close = tk.Button(btn_frame, text="Close", bg="#e74c3c", fg="white", font=(
-            "Segoe UI", 10, "bold"), bd=0, px=20, py=8, command=self.window.destroy)
-        btn_close.pack(side="right", padx=5)
+        tk.Button(
+            footer, text="Cancel", bg="#333333", fg="#ffffff", font=("Segoe UI", 10),
+            bd=0, padx=20, pady=8, cursor="hand2", command=self.window.destroy
+        ).pack(side="right")
 
     def _add_color_picker(self, parent, label_text, var_name, row, col):
-        frame = ttk.Frame(parent, style="Dark.TFrame")
-        frame.grid(row=row, column=col, padx=20, pady=10, sticky="w")
+        frame = tk.Frame(parent, bg=self.bg_card)
+        frame.grid(row=row, column=col, sticky="w", pady=10, padx=(0, 40))
 
-        ttk.Label(frame, text=label_text, style="Setting.TLabel").pack(
-            side="left", padx=(0, 10))
+        tk.Label(frame, text=label_text, bg=self.bg_card, fg=self.text_secondary, font=("Segoe UI", 10)).pack(side="left", padx=(0, 10))
 
-        btn = tk.Button(
-            frame, textvariable=self.color_vars[var_name], width=10, bd=1, relief="solid")
+        btn = tk.Button(frame, textvariable=self.color_vars[var_name], width=9, bd=0, font=("Consolas", 9))
         btn.configure(command=lambda: self._choose_color(var_name, btn))
         btn.pack(side="left")
 
     def _choose_color(self, var_name, button):
         current_color = self.color_vars[var_name].get()
-        color = colorchooser.askcolor(
-            initialcolor=current_color, title=f"Choose {var_name}")
-        if color[1]:  # user didn't cancel
+        color = colorchooser.askcolor(initialcolor=current_color, title=f"Choose {var_name}")
+        if color[1]:
             self.color_vars[var_name].set(color[1])
-            button.configure(bg=color[1])
-            # calculate contrasting text color for the button
-            button.configure(fg="black" if self._get_brightness(
-                color[1]) > 128 else "white")
+            self._update_btn_color(button, color[1])
+
+    def _update_btn_color(self, button, hex_color):
+        button.configure(bg=hex_color)
+        button.configure(fg="#000000" if self._get_brightness(hex_color) > 128 else "#ffffff")
 
     def _get_brightness(self, hex_color):
         h = hex_color.lstrip('#')
@@ -167,6 +170,28 @@ class SettingsWindow:
         for k, v in self.color_vars.items():
             val = getattr(self.config, k)
             v.set(val)
+        
+        # update button colors after init
+        # Wait a small delay to ensure UI is drawn before finding buttons
+        self.window.after(50, self._sync_button_colors)
+
+    def _sync_button_colors(self):
+        # A bit hacky, but iterates thru widgets to style the color buttons
+        for w in self.window.winfo_children():
+            self._recursively_sync_buttons(w)
+
+    def _recursively_sync_buttons(self, widget):
+        if isinstance(widget, tk.Button) and hasattr(widget, 'cget'):
+            try:
+                text_val = widget.cget('textvariable')
+                if text_val:
+                    for k, var in self.color_vars.items():
+                        if str(var) == text_val:
+                            self._update_btn_color(widget, var.get())
+            except Exception:
+                pass
+        for child in widget.winfo_children():
+            self._recursively_sync_buttons(child)
 
     def _apply_changes(self):
         # 1. Update Config Object
@@ -188,6 +213,7 @@ class SettingsWindow:
         else:
             StartupManager.disable_startup()
 
+        self.window.destroy()
         messagebox.showinfo(
             "Settings Saved",
             "Settings have been saved.\nRestarting application to apply display changes."

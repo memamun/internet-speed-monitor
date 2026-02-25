@@ -38,21 +38,21 @@ def main() -> None:
     service = SpeedMonitorService(network=network, repo=repo)
 
     # 3. Presentation
+    # Always create the TaskbarWidget (it handles the tray icon and main window)
+    taskbar = TaskbarWidget(service=service, repo=repo, config_service=config_service)
+    widgets = [taskbar]
+
+    # If floating is enabled, create it as a child of the taskbar root
     if config_service.config.is_floating:
-        widget = FloatingWidget(
-            service=service, repo=repo, config_service=config_service)
-    else:
-        widget = TaskbarWidget(service=service, repo=repo,
-                               config_service=config_service)
+        floating = FloatingWidget(
+            service=service, repo=repo, config_service=config_service, parent=taskbar.root)
+        widgets.append(floating)
 
     try:
-        if hasattr(widget, 'run'):
-            widget.run()
-        else:
-            widget.root.mainloop()
+        # Run the main taskbar widget
+        taskbar.run()
     except Exception as e:
-        print(f"Error starting widget: {e}")
-
+        print(f"Error starting widgets: {e}")
 
 if __name__ == "__main__":
     main()
