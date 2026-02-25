@@ -39,7 +39,7 @@ Presentation → CustomTkinter StatisticsWindow, Tkinter TaskbarWidget
 
 ### Option A — PowerShell One-Liner ⭐ Easiest
 ```powershell
-irm memamun.github.io/internet-speed-monitor/install.ps1 | iex
+irm mamunwrites.com/internet-speed-monitor/install.ps1 | iex
 ```
 Downloads and silently installs the latest release automatically.
 
