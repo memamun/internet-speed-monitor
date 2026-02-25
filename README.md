@@ -37,17 +37,20 @@ Presentation → CustomTkinter StatisticsWindow, Tkinter TaskbarWidget
 
 ## 🚀 Quick Start
 
-### Option A — Download Executable (Recommended)
+### Option A — PowerShell One-Liner ⭐ Easiest
+```powershell
+irm https://raw.githubusercontent.com/memamun/internet-speed-monitor/master/install.ps1 | iex
+```
+Downloads and silently installs the latest release automatically.
+
+### Option B — Download Executable
 1. Go to [**Releases**](https://github.com/memamun/internet-speed-monitor/releases/latest)
-2. Download `SpeedMonitor.exe`
+2. Download `SpeedMonitor_Setup_vX.X.X.exe`
 3. Run it — no Python required!
 
-### Option B — Run from Source
+### Option C — Run from Source
 ```powershell
-# Install dependencies
 pip install -r requirements.txt
-
-# Run
 python main.py
 ```
 
