@@ -229,13 +229,27 @@ class TaskbarWidget:
 
     @staticmethod
     def _create_tray_icon() -> Image.Image:
-        """Generate a small 64x64 tray icon with up/down arrows."""
-        img = Image.new("RGB", (64, 64), "#1e1e1e")
+        """Generate a polished 64x64 tray icon."""
+        size = 64
+        img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
         draw = ImageDraw.Draw(img)
-        # Up arrow (orange)
-        draw.polygon([(32, 8), (20, 28), (44, 28)], fill="#f39c12")
-        # Down arrow (cyan)
-        draw.polygon([(32, 56), (20, 36), (44, 36)], fill="#00e5ff")
+
+        # Rounded dark background
+        r = 12
+        draw.rounded_rectangle([0, 0, size - 1, size - 1], radius=r,
+                                fill="#1e1e1e")
+
+        # Thin separator line
+        draw.line([(10, 31), (54, 31)], fill="#333333", width=1)
+
+        # Up arrow (orange) — top half
+        draw.polygon([(32, 6), (18, 26), (27, 26), (27, 29),
+                      (37, 29), (37, 26), (46, 26)], fill="#f39c12")
+
+        # Down arrow (cyan) — bottom half
+        draw.polygon([(32, 58), (18, 38), (27, 38), (27, 35),
+                      (37, 35), (37, 38), (46, 38)], fill="#00e5ff")
+
         return img
 
     def _tray_show_stats(self, icon=None, item=None) -> None:
