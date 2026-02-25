@@ -9,8 +9,12 @@ from __future__ import annotations
 import sys
 import atexit
 import signal
+import threading
 import tkinter as tk
 from typing import TYPE_CHECKING
+
+import pystray
+from PIL import Image, ImageDraw
 
 from infrastructure.system.windows_taskbar import TaskbarHelper
 from domain.entities.network_usage import SpeedSnapshot
@@ -43,6 +47,8 @@ class TaskbarWidget:
         self.root.title("SpeedMonitor")
         self.running = True
         self.embedded = False
+        self._hidden = False  # fullscreen-aware visibility state
+        self._tray_icon: pystray.Icon | None = None
 
         self._tb = TaskbarHelper()
         self._create_ui()
@@ -78,6 +84,9 @@ class TaskbarWidget:
         self._service._on_speed_update = self._on_speed
         self._service.start()
 
+        # System tray icon
+        self._setup_tray()
+
         self._adjust_job()
         self.root.protocol("WM_DELETE_WINDOW", self.exit_app)
 
@@ -111,14 +120,23 @@ class TaskbarWidget:
         if not self.running:
             return
         try:
-            self._position()
-            if self.embedded:
-                self._tb.show(self.hwnd)
+            # Fullscreen detection — hide when taskbar is hidden
+            if self._tb.is_fullscreen_active():
+                if not self._hidden:
+                    self._tb.hide(self.hwnd)
+                    self._hidden = True
             else:
-                self._tb.ensure_topmost(self.hwnd)
+                if self._hidden:
+                    self._tb.show(self.hwnd)
+                    self._hidden = False
+                self._position()
+                if self.embedded:
+                    self._tb.show(self.hwnd)
+                else:
+                    self._tb.ensure_topmost(self.hwnd)
         except Exception:
             pass
-        self.root.after(2000, self._adjust_job)
+        self.root.after(1000, self._adjust_job)
 
     # ── UI ────────────────────────────────────────────────────────────────────
 
@@ -196,14 +214,54 @@ class TaskbarWidget:
         except tk.TclError:
             pass
 
+    # ── System tray ───────────────────────────────────────────────────────────
+
+    def _setup_tray(self) -> None:
+        """Create a system tray icon with menu options."""
+        icon_img = self._create_tray_icon()
+        menu = pystray.Menu(
+            pystray.MenuItem("Usage Statistics", self._tray_show_stats),
+            pystray.Menu.SEPARATOR,
+            pystray.MenuItem("Exit", self._tray_exit),
+        )
+        self._tray_icon = pystray.Icon("SpeedMonitor", icon_img, "SpeedMonitor", menu)
+        threading.Thread(target=self._tray_icon.run, daemon=True).start()
+
+    @staticmethod
+    def _create_tray_icon() -> Image.Image:
+        """Generate a small 64x64 tray icon with up/down arrows."""
+        img = Image.new("RGB", (64, 64), "#1e1e1e")
+        draw = ImageDraw.Draw(img)
+        # Up arrow (orange)
+        draw.polygon([(32, 8), (20, 28), (44, 28)], fill="#f39c12")
+        # Down arrow (cyan)
+        draw.polygon([(32, 56), (20, 36), (44, 36)], fill="#00e5ff")
+        return img
+
+    def _tray_show_stats(self, icon=None, item=None) -> None:
+        self.root.after(0, self._show_stats)
+
+    def _tray_exit(self, icon=None, item=None) -> None:
+        self.root.after(0, self.exit_app)
+
     # ── Lifecycle ─────────────────────────────────────────────────────────────
 
     def _cleanup(self) -> None:
         self._service.stop()
+        if self._tray_icon:
+            try:
+                self._tray_icon.stop()
+            except Exception:
+                pass
 
     def exit_app(self) -> None:
         self.running = False
         self._service.stop()
+        if self._tray_icon:
+            try:
+                self._tray_icon.stop()
+            except Exception:
+                pass
         try:
             self.root.destroy()
         except Exception:

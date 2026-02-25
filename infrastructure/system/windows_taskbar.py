@@ -130,3 +130,21 @@ class TaskbarHelper:
         if fg == self.h_taskbar:
             user32.SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0,
                                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE)
+
+    def hide(self, hwnd: int) -> None:
+        user32.ShowWindow(hwnd, 0)  # SW_HIDE
+
+    def is_fullscreen_active(self) -> bool:
+        """Check if the foreground window is fullscreen (taskbar hidden)."""
+        fg = user32.GetForegroundWindow()
+        if not fg or fg == self.h_taskbar:
+            return False
+        try:
+            fl, ft, fr, fb = get_rect(fg)
+            # Get primary monitor dimensions
+            screen_w = user32.GetSystemMetrics(0)  # SM_CXSCREEN
+            screen_h = user32.GetSystemMetrics(1)  # SM_CYSCREEN
+            # Fullscreen = covers the entire screen
+            return fl <= 0 and ft <= 0 and fr >= screen_w and fb >= screen_h
+        except Exception:
+            return False
