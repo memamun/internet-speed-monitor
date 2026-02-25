@@ -1,7 +1,13 @@
 __pycache__/
 *.pyc
 *.pyo
+*.pyd
 usage_history.db
 usage_history.db-wal
 usage_history.db-shm
 .env
+
+# PyInstaller
+build/
+dist/
+*.spec.bak
