@@ -21,8 +21,6 @@ from infrastructure.system.windows_taskbar import TaskbarHelper
 
 if TYPE_CHECKING:
     from application.services.speed_monitor_service import SpeedMonitorService
-
-
 class TaskbarWidget:
     """Speed monitor widget embedded in the Windows taskbar (Win11 style)."""
 
@@ -38,18 +36,9 @@ class TaskbarWidget:
         self,
         service: "SpeedMonitorService",
         repo: "UsageRepository",
-        config_service=None
     ) -> None:
         self._service = service
         self._repo = repo
-        self._config_service = config_service
-        self.config = config_service.config if config_service else None
-
-        # Determine theme from config or fallback
-        self.bg_color = self.config.bg_color if self.config else self.TRANS_COLOR
-        self.text_color = self.config.text_color if self.config else self.TEXT_COLOR
-        self.ul_color = self.config.ul_color if self.config else self.UL_COLOR
-        self.dl_color = self.config.dl_color if self.config else self.DL_COLOR
 
         self.root = tk.Tk()
         self.root.title("SpeedMonitor")
@@ -156,24 +145,20 @@ class TaskbarWidget:
     # ── UI ──────────────────────────────────────────────────────────────────
 
     def _create_ui(self) -> None:
-        self.root.configure(bg=self.bg_color)
+        self.root.configure(bg=self.TRANS_COLOR)
         self.root.geometry(f"{self.WIDGET_WIDTH}x{self.WIDGET_HEIGHT}")
 
         # Place container statically so text width doesn't shift it
-        container = tk.Frame(self.root, bg=self.bg_color)
+        container = tk.Frame(self.root, bg=self.TRANS_COLOR)
         container.place(relx=0.03, rely=0.5, anchor="w")
 
         # Use original font for text
         sys_font = ("Segoe UI Semibold", 10)
-        if self.config:
-            font_weight = "bold" if self.config.bold_font else "normal"
-            sys_font = (self.config.font_family,
-                        self.config.font_size, font_weight)
 
         # Custom Canvas to draw exact DU Meter pixel arrows (fixed to the left)
         icon_canvas = tk.Canvas(
             container, width=16, height=36,
-            bg=self.bg_color, highlightthickness=0
+            bg=self.TRANS_COLOR, highlightthickness=0
         )
         icon_canvas.grid(row=0, column=0, rowspan=2, padx=(0, 6), pady=0)
 
@@ -182,48 +167,58 @@ class TaskbarWidget:
         icon_canvas.create_polygon(
             2, 7, 14, 7,      # Top flat part of the triangle
             8, 14,            # Pointing straight down
-            fill=self.dl_color, width=0
+            fill=self.DL_COLOR, width=0
         )
         # Draw the stem of the arrow
-        icon_canvas.create_rectangle(
-            5, 2, 11, 8, fill=self.dl_color, outline="")
+        icon_canvas.create_rectangle(5, 2, 11, 8, fill=self.DL_COLOR, outline="")
         # Draw the solid base line it points to
-        icon_canvas.create_rectangle(
-            3, 16, 13, 17, fill=self.dl_color, outline="")
+        icon_canvas.create_rectangle(3, 16, 13, 17, fill=self.DL_COLOR, outline="")
 
         # Upload (Bottom) - Orange arrow pointing UP from a line
         # Draw the solid base line it starts from
-        icon_canvas.create_rectangle(
-            3, 20, 13, 21, fill=self.ul_color, outline="")
+        icon_canvas.create_rectangle(3, 20, 13, 21, fill=self.UL_COLOR, outline="")
         # Draw the triangle head pointing up
         icon_canvas.create_polygon(
             2, 30, 14, 30,    # Bottom flat part of the triangle
             8, 23,            # Pointing straight up
-            fill=self.ul_color, width=0
+            fill=self.UL_COLOR, width=0
         )
         # Draw the stem of the arrow
-        icon_canvas.create_rectangle(
-            5, 29, 11, 35, fill=self.ul_color, outline="")
+        icon_canvas.create_rectangle(5, 29, 11, 35, fill=self.UL_COLOR, outline="")
 
         # Ensure columns don't collapse and assign appropriate weights
+        # Icon canvas, then right-aligned numbers, then left-aligned units
         container.columnconfigure(0, weight=0)
-        container.columnconfigure(1, weight=1)
+        container.columnconfigure(1, weight=0, minsize=40)
+        container.columnconfigure(2, weight=1)
 
-        # Upload row (Bottom)
-        self.ul_val = tk.Label(
-            container, text="0 B/s", font=sys_font,
-            fg=self.text_color, bg=self.bg_color,
+        # Download row text (Top)
+        self.dl_num = tk.Label(
+            container, text="0", font=sys_font,
+            fg=self.TEXT_COLOR, bg=self.TRANS_COLOR,
+            anchor="e", bd=0, pady=0
+        )
+        self.dl_num.grid(row=0, column=1, sticky="e", pady=(0, 0), padx=(0, 2))
+        self.dl_unit = tk.Label(
+            container, text="B/s", font=sys_font,
+            fg=self.TEXT_COLOR, bg=self.TRANS_COLOR,
             anchor="w", bd=0, pady=0
         )
-        self.ul_val.grid(row=0, column=1, sticky="w", padx=(0, 2), pady=0)
+        self.dl_unit.grid(row=0, column=2, sticky="w", pady=(0, 0))
 
-        # Download row (Top)
-        self.dl_val = tk.Label(
-            container, text="0 B/s", font=sys_font,
-            fg=self.text_color, bg=self.bg_color,
+        # Upload row text (Bottom)
+        self.ul_num = tk.Label(
+            container, text="0", font=sys_font,
+            fg=self.TEXT_COLOR, bg=self.TRANS_COLOR,
+            anchor="e", bd=0, pady=0
+        )
+        self.ul_num.grid(row=1, column=1, sticky="e", pady=(0, 0), padx=(0, 2))
+        self.ul_unit = tk.Label(
+            container, text="B/s", font=sys_font,
+            fg=self.TEXT_COLOR, bg=self.TRANS_COLOR,
             anchor="w", bd=0, pady=0
         )
-        self.dl_val.grid(row=1, column=1, sticky="w", padx=(0, 2), pady=0)
+        self.ul_unit.grid(row=1, column=2, sticky="w", pady=(0, 0))
 
         # Context menu
         self.menu = tk.Menu(
@@ -241,19 +236,10 @@ class TaskbarWidget:
         self.menu.add_command(
             label="Usage Statistics",
             command=self._show_stats)
-        self.menu.add_command(
-            label="Network Adapters",
-            command=self._show_adapters)
-        self.menu.add_command(
-            label="Speed Converter",
-            command=self._show_converter)
-        self.menu.add_command(
-            label="Settings",
-            command=self._show_settings)
         self.menu.add_separator()
         self.menu.add_command(label="Exit", command=self.exit_app)
 
-        for w in (container, self.ul_val, self.dl_val):
+        for w in (container, self.ul_num, self.ul_unit, self.dl_num, self.dl_unit):
             w.bind("<Button-3>", self._show_menu)
 
     def _show_menu(self, e: tk.Event) -> None:
@@ -263,29 +249,17 @@ class TaskbarWidget:
         from presentation.windows.statistics_window import StatisticsWindow
         StatisticsWindow(self.root, self._service, self._repo)
 
-    def _show_converter(self) -> None:
-        from presentation.windows.speed_converter_window import SpeedConverterWindow
-        SpeedConverterWindow(self.root)
-
-    def _show_adapters(self) -> None:
-        from presentation.windows.adapter_config_window import AdapterConfigWindow
-        AdapterConfigWindow(self.root, self._config_service)
-
-    def _show_settings(self) -> None:
-        from presentation.windows.settings_window import SettingsWindow
-        SettingsWindow(self.root, self._config_service, self.root)
-
     # ── Speed callback ───────────────────────────────────────────────────────
 
     @staticmethod
-    def _fmt(bps: int) -> str:
+    def _fmt(bps: int) -> tuple[str, str]:
         if bps >= 1024 ** 3:
-            return f"{bps / 1024**3:.2f} GB/s"
+            return f"{bps / 1024**3:.2f}", "GB/s"
         if bps >= 1024 ** 2:
-            return f"{bps / 1024**2:.2f} MB/s"
+            return f"{bps / 1024**2:.2f}", "MB/s"
         if bps >= 1024:
-            return f"{bps / 1024:.2f} KB/s"
-        return f"{bps:.0f}  B/s"
+            return f"{bps / 1024:.2f}", "KB/s"
+        return f"{bps:.0f}", "B/s"
 
     def _on_speed(self, snap: SpeedSnapshot) -> None:
         try:
@@ -295,8 +269,13 @@ class TaskbarWidget:
 
     def _update_labels(self, snap: SpeedSnapshot) -> None:
         try:
-            self.ul_val.config(text=self._fmt(snap.up_speed))
-            self.dl_val.config(text=self._fmt(snap.down_speed))
+            ul_n, ul_u = self._fmt(snap.up_speed)
+            dl_n, dl_u = self._fmt(snap.down_speed)
+            
+            self.ul_num.config(text=ul_n)
+            self.ul_unit.config(text=ul_u)
+            self.dl_num.config(text=dl_n)
+            self.dl_unit.config(text=dl_u)
         except tk.TclError:
             pass
 
@@ -307,9 +286,6 @@ class TaskbarWidget:
         icon_img = self._create_tray_icon()
         menu = pystray.Menu(
             pystray.MenuItem("Usage Statistics", self._tray_show_stats),
-            pystray.MenuItem("Network Adapters", self._tray_show_adapters),
-            pystray.MenuItem("Speed Converter", self._tray_show_converter),
-            pystray.MenuItem("Settings", self._tray_show_settings),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("Exit", self._tray_exit),
         )
@@ -344,15 +320,6 @@ class TaskbarWidget:
 
     def _tray_show_stats(self, icon=None, item=None) -> None:
         self.root.after(0, self._show_stats)
-
-    def _tray_show_adapters(self, icon=None, item=None) -> None:
-        self.root.after(0, self._show_adapters)
-
-    def _tray_show_converter(self, icon=None, item=None) -> None:
-        self.root.after(0, self._show_converter)
-
-    def _tray_show_settings(self, icon=None, item=None) -> None:
-        self.root.after(0, self._show_settings)
 
     def _tray_exit(self, icon=None, item=None) -> None:
         self.root.after(0, self.exit_app)

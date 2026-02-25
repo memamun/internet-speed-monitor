@@ -1,0 +1,12 @@
+{
+    "is_floating": false,
+    "font_family": "Segoe UI",
+    "font_size": 9,
+    "bold_font": true,
+    "bg_color": "#010101",
+    "dl_color": "#00e5ff",
+    "ul_color": "#f39c12",
+    "text_color": "#ffffff",
+    "run_on_startup": false,
+    "monitored_adapter": "All"
+}

@@ -150,13 +150,17 @@ class StatisticsWindow:
         self._lbl_live_up = ctk.CTkLabel(
             live_frame,
             text="↑ 0 B/s",
-            font=ctk.CTkFont(size=13, weight="bold"),
+            font=ctk.CTkFont(
+                size=13,
+                weight="bold"),
             text_color=ACCENT_UP)
         self._lbl_live_up.pack(side=tk.LEFT, padx=5)
         self._lbl_live_dn = ctk.CTkLabel(
             live_frame,
             text="↓ 0 B/s",
-            font=ctk.CTkFont(size=13, weight="bold"),
+            font=ctk.CTkFont(
+                size=13,
+                weight="bold"),
             text_color=ACCENT_DN)
         self._lbl_live_dn.pack(side=tk.LEFT, padx=5)
 
@@ -164,11 +168,13 @@ class StatisticsWindow:
         self._tabview = ctk.CTkTabview(self._win, corner_radius=10)
         self._tabview.pack(fill=tk.BOTH, expand=True, padx=20, pady=(10, 5))
 
-        self._tab_summary = self._tabview.add("Summary")
-        self._tab_daily = self._tabview.add("Day Wise Data")
+        self._tab_today = self._tabview.add("Today")
+        self._tab_month = self._tabview.add("This Month")
+        self._tab_trends = self._tabview.add("Trends (30 Days)")
 
-        self._build_summary_tab()
-        self._build_daily_tab()
+        self._build_today_tab()
+        self._build_month_tab()
+        self._build_trends_tab()
 
         # ── Footer ──────────────────────────────────────────────────────────
         footer = ctk.CTkFrame(
@@ -194,144 +200,286 @@ class StatisticsWindow:
                                   command=self._on_closing)
         btn_close.pack(side=tk.RIGHT, padx=20)
 
-    def _build_summary_tab(self) -> None:
-        f = self._tab_summary
+    def _build_today_tab(self) -> None:
+        f = self._tab_today
 
-        # Top Row Cards
+        # Hero Total
+        hero = ctk.CTkFrame(
+            f,
+            corner_radius=8,
+            fg_color=BG_CARD,
+            border_width=1,
+            border_color="#333333")
+        hero.pack(fill=tk.X, pady=(10, 10), padx=10)
+        ctk.CTkLabel(
+            hero,
+            text="Total Usage Today",
+            text_color="gray",
+            font=ctk.CTkFont(
+                size=12)).pack(
+            anchor="w",
+            padx=20,
+            pady=(
+                15,
+                0))
+        self._lbl_today_total = ctk.CTkLabel(
+            hero, text="—", font=ctk.CTkFont(
+                size=32, weight="bold"))
+        self._lbl_today_total.pack(anchor="w", padx=20, pady=(0, 15))
+
+        # Up/Down Row
         row = ctk.CTkFrame(f, fg_color="transparent")
-        row.pack(fill=tk.X, pady=(10, 10), padx=10)
+        row.pack(fill=tk.X, pady=(0, 10), padx=10)
         row.columnconfigure(0, weight=1)
         row.columnconfigure(1, weight=1)
 
-        # Upload Card
         ul_card = ctk.CTkFrame(
-            row, corner_radius=8, fg_color=BG_CARD,
-            border_width=1, border_color="#333333"
-        )
+            row,
+            corner_radius=8,
+            fg_color=BG_CARD,
+            border_width=1,
+            border_color="#333333")
         ul_card.grid(row=0, column=0, sticky="nsew", padx=(0, 5))
         ctk.CTkLabel(
-            ul_card, text="↑ TOTAL UPLOAD (MONTH)", text_color=ACCENT_UP,
-            font=ctk.CTkFont(size=11, weight="bold")
-        ).pack(anchor="w", padx=15, pady=(15, 0))
-        self._lbl_sum_up = ctk.CTkLabel(
-            ul_card, text="—", font=ctk.CTkFont(size=24, weight="bold")
-        )
-        self._lbl_sum_up.pack(anchor="w", padx=15, pady=(0, 15))
+            ul_card,
+            text="↑ UPLOAD",
+            text_color=ACCENT_UP,
+            font=ctk.CTkFont(
+                size=11,
+                weight="bold")).pack(
+            anchor="w",
+            padx=15,
+            pady=(
+                15,
+                0))
+        self._lbl_today_up = ctk.CTkLabel(
+            ul_card, text="—", font=ctk.CTkFont(
+                size=20, weight="bold"))
+        self._lbl_today_up.pack(anchor="w", padx=15, pady=(0, 15))
 
-        # Download Card
         dn_card = ctk.CTkFrame(
-            row, corner_radius=8, fg_color=BG_CARD,
-            border_width=1, border_color="#333333"
-        )
+            row,
+            corner_radius=8,
+            fg_color=BG_CARD,
+            border_width=1,
+            border_color="#333333")
         dn_card.grid(row=0, column=1, sticky="nsew", padx=(5, 0))
         ctk.CTkLabel(
-            dn_card, text="↓ TOTAL DOWNLOAD (MONTH)", text_color=ACCENT_DN,
-            font=ctk.CTkFont(size=11, weight="bold")
-        ).pack(anchor="w", padx=15, pady=(15, 0))
-        self._lbl_sum_dn = ctk.CTkLabel(
-            dn_card, text="—", font=ctk.CTkFont(size=24, weight="bold")
-        )
-        self._lbl_sum_dn.pack(anchor="w", padx=15, pady=(0, 15))
+            dn_card,
+            text="↓ DOWNLOAD",
+            text_color=ACCENT_DN,
+            font=ctk.CTkFont(
+                size=11,
+                weight="bold")).pack(
+            anchor="w",
+            padx=15,
+            pady=(
+                15,
+                0))
+        self._lbl_today_dn = ctk.CTkLabel(
+            dn_card, text="—", font=ctk.CTkFont(
+                size=20, weight="bold"))
+        self._lbl_today_dn.pack(anchor="w", padx=15, pady=(0, 15))
 
-        # Doughnut Chart Frame
-        self._chart_frame = ctk.CTkFrame(f, fg_color="transparent")
+        # Speed stats grid
+        speed_card = ctk.CTkFrame(
+            f,
+            corner_radius=8,
+            fg_color=BG_CARD,
+            border_width=1,
+            border_color="#333333")
+        speed_card.pack(fill=tk.X, pady=(0, 10), padx=10)
+        ctk.CTkLabel(
+            speed_card,
+            text="SPEED METRICS",
+            text_color="gray",
+            font=ctk.CTkFont(
+                size=11,
+                weight="bold")).pack(
+            anchor="w",
+            padx=15,
+            pady=(
+                10,
+                5))
+
+        self._lbl_today_avg = self._stat_row(speed_card, "Avg Speed", 0)
+        self._lbl_today_max_up = self._stat_row(speed_card, "Peak ↑ Upload", 1)
+        self._lbl_today_max_dn = self._stat_row(
+            speed_card, "Peak ↓ Download", 2)
+
+        # Active time
+        time_card = ctk.CTkFrame(
+            f,
+            corner_radius=8,
+            fg_color=BG_CARD,
+            border_width=1,
+            border_color="#333333")
+        time_card.pack(fill=tk.X, pady=(0, 10), padx=10)
+        ctk.CTkLabel(
+            time_card,
+            text="MONITORING TIME",
+            text_color="gray",
+            font=ctk.CTkFont(
+                size=11,
+                weight="bold")).pack(
+            anchor="w",
+            padx=15,
+            pady=(
+                10,
+                0))
+        self._lbl_today_time = ctk.CTkLabel(
+            time_card, text="—", font=ctk.CTkFont(size=14))
+        self._lbl_today_time.pack(anchor="w", padx=15, pady=(0, 10))
+
+    def _build_month_tab(self) -> None:
+        f = self._tab_month
+
+        hero = ctk.CTkFrame(
+            f,
+            corner_radius=8,
+            fg_color=BG_CARD,
+            border_width=1,
+            border_color="#333333")
+        hero.pack(fill=tk.X, pady=(10, 10), padx=10)
+        ctk.CTkLabel(
+            hero,
+            text=f"Total — {date.today().strftime('%B %Y')}",
+            text_color="gray",
+            font=ctk.CTkFont(
+                size=12)).pack(
+            anchor="w",
+            padx=20,
+            pady=(
+                15,
+                0))
+        self._lbl_month_total = ctk.CTkLabel(
+            hero, text="—", font=ctk.CTkFont(
+                size=32, weight="bold"))
+        self._lbl_month_total.pack(anchor="w", padx=20, pady=(0, 15))
+
+        row = ctk.CTkFrame(f, fg_color="transparent")
+        row.pack(fill=tk.X, pady=(0, 10), padx=10)
+        row.columnconfigure(0, weight=1)
+        row.columnconfigure(1, weight=1)
+
+        ul_card = ctk.CTkFrame(
+            row,
+            corner_radius=8,
+            fg_color=BG_CARD,
+            border_width=1,
+            border_color="#333333")
+        ul_card.grid(row=0, column=0, sticky="nsew", padx=(0, 5))
+        ctk.CTkLabel(
+            ul_card,
+            text="↑ UPLOAD",
+            text_color=ACCENT_UP,
+            font=ctk.CTkFont(
+                size=11,
+                weight="bold")).pack(
+            anchor="w",
+            padx=15,
+            pady=(
+                15,
+                0))
+        self._lbl_month_up = ctk.CTkLabel(
+            ul_card, text="—", font=ctk.CTkFont(
+                size=20, weight="bold"))
+        self._lbl_month_up.pack(anchor="w", padx=15, pady=(0, 15))
+
+        dn_card = ctk.CTkFrame(
+            row,
+            corner_radius=8,
+            fg_color=BG_CARD,
+            border_width=1,
+            border_color="#333333")
+        dn_card.grid(row=0, column=1, sticky="nsew", padx=(5, 0))
+        ctk.CTkLabel(
+            dn_card,
+            text="↓ DOWNLOAD",
+            text_color=ACCENT_DN,
+            font=ctk.CTkFont(
+                size=11,
+                weight="bold")).pack(
+            anchor="w",
+            padx=15,
+            pady=(
+                15,
+                0))
+        self._lbl_month_dn = ctk.CTkLabel(
+            dn_card, text="—", font=ctk.CTkFont(
+                size=20, weight="bold"))
+        self._lbl_month_dn.pack(anchor="w", padx=15, pady=(0, 15))
+
+        peak_card = ctk.CTkFrame(
+            f,
+            corner_radius=8,
+            fg_color=BG_CARD,
+            border_width=1,
+            border_color="#333333")
+        peak_card.pack(fill=tk.X, pady=(0, 10), padx=10)
+        ctk.CTkLabel(
+            peak_card,
+            text="PEAK SPEEDS",
+            text_color="gray",
+            font=ctk.CTkFont(
+                size=11,
+                weight="bold")).pack(
+            anchor="w",
+            padx=15,
+            pady=(
+                10,
+                5))
+        self._lbl_month_peak_up = self._stat_row(peak_card, "Peak ↑ Upload", 0)
+        self._lbl_month_peak_dn = self._stat_row(
+            peak_card, "Peak ↓ Download", 1)
+
+        days_card = ctk.CTkFrame(
+            f,
+            corner_radius=8,
+            fg_color=BG_CARD,
+            border_width=1,
+            border_color="#333333")
+        days_card.pack(fill=tk.X, pady=(0, 10), padx=10)
+        self._lbl_month_days = self._stat_row(days_card, "Days tracked", 0)
+
+    def _build_trends_tab(self) -> None:
+        self._chart_frame = ctk.CTkFrame(
+            self._tab_trends, fg_color="transparent")
         self._chart_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-        # Detailed Stats Below Chart
-        stats_frame = ctk.CTkFrame(
-            f, corner_radius=8, fg_color=BG_CARD,
-            border_width=1, border_color="#333333"
-        )
-        stats_frame.pack(fill=tk.X, pady=(0, 10), padx=10)
+        # Plot will be rendered in _refresh_charts()
 
-        self._lbl_sum_total = self._stat_row(
-            stats_frame, f"Total Data ({date.today().strftime('%B')})", 0)
-        self._lbl_sum_peak_up = self._stat_row(
-            stats_frame, "Monthly Peak ↑ Upload", 1)
-        self._lbl_sum_peak_dn = self._stat_row(
-            stats_frame, "Monthly Peak ↓ Download", 2)
-        self._lbl_sum_days = self._stat_row(stats_frame, "Days tracked", 3)
-
-    def _build_daily_tab(self) -> None:
-        f = self._tab_daily
-
-        import tkinter.ttk as ttk
-
-        # Style the Treeview to match dark theme
-        style = ttk.Style(self._win)
-        style.theme_use("clam")
-        style.configure(
-            "Treeview",
-            background=BG_CARD,
-            foreground="white",
-            rowheight=25,
-            fieldbackground=BG_CARD,
-            bordercolor="#333333",
-            lightcolor="#333333",
-            darkcolor="#333333"
-        )
-        style.map("Treeview", background=[("selected", ACCENT_MAIN)])
-        style.configure(
-            "Treeview.Heading",
-            background=BG_SURFACE,
-            foreground="white",
-            relief="flat",
-            font=("Segoe UI", 10, "bold")
-        )
-        style.map("Treeview.Heading", background=[("active", "#333333")])
-
-        # Treeview Scrollbar
-        tree_frame = ctk.CTkFrame(f, fg_color="transparent")
-        tree_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-
-        tree_scroll = ttk.Scrollbar(tree_frame)
-        tree_scroll.pack(side=tk.RIGHT, fill=tk.Y)
-
-        self._tree = ttk.Treeview(
-            tree_frame,
-            yscrollcommand=tree_scroll.set,
-            selectmode="extended",
-            columns=("Date", "Received", "Sent", "Total"),
-            show="headings"
-        )
-        self._tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        tree_scroll.config(command=self._tree.yview)
-
-        # Columns Configuration
-        self._tree.heading("Date", text="Date")
-        self._tree.column("Date", anchor=tk.W, width=120)
-
-        self._tree.heading("Received", text="Received")
-        self._tree.column("Received", anchor=tk.E, width=100)
-
-        self._tree.heading("Sent", text="Sent")
-        self._tree.column("Sent", anchor=tk.E, width=100)
-
-        self._tree.heading("Total", text="Total")
-        self._tree.column("Total", anchor=tk.E, width=100)
-
-    def _stat_row(self, parent: ctk.CTkFrame, label: str, row: int) -> ctk.CTkLabel:
+    def _stat_row(
+            self,
+            parent: ctk.CTkFrame,
+            label: str,
+            row: int) -> ctk.CTkLabel:
         container = ctk.CTkFrame(parent, fg_color="transparent")
-        container.pack(fill=tk.X, padx=15, pady=(5, 5))
+        container.pack(fill=tk.X, padx=15, pady=(0, 5))
 
         ctk.CTkLabel(
-            container, text=label, text_color="gray", font=ctk.CTkFont(size=13)
-        ).pack(side=tk.LEFT)
+            container,
+            text=label,
+            text_color="gray",
+            font=ctk.CTkFont(
+                size=13)).pack(
+            side=tk.LEFT)
         val = ctk.CTkLabel(
-            container, text="—", font=ctk.CTkFont(size=13, weight="bold")
-        )
+            container, text="—", font=ctk.CTkFont(
+                size=13, weight="bold"))
         val.pack(side=tk.RIGHT)
+
         return val
 
     # ── Live Speed ──────────────────────────────────────────────────────────
 
-    def _on_live_speed(self, snap: "SpeedSnapshot") -> None:
+    def _on_live_speed(self, snap: SpeedSnapshot) -> None:
         try:
             self._win.after(0, self._update_live_labels, snap)
         except Exception:
             pass
 
-    def _update_live_labels(self, snap: "SpeedSnapshot") -> None:
+    def _update_live_labels(self, snap: SpeedSnapshot) -> None:
         try:
             self._lbl_live_up.configure(text=f"↑ {_fmt_speed(snap.up_speed)}")
             self._lbl_live_dn.configure(
@@ -344,80 +492,108 @@ class StatisticsWindow:
     def _refresh(self) -> None:
         today = date.today()
 
-        # Update Month Summary
+        # Update Today
+        d = self._repo.get_daily(today)
+        if d:
+            self._lbl_today_total.configure(text=_fmt_bytes(d.total_bytes))
+            self._lbl_today_up.configure(text=_fmt_bytes(d.bytes_sent))
+            self._lbl_today_dn.configure(text=_fmt_bytes(d.bytes_recv))
+            self._lbl_today_avg.configure(text=_fmt_speed(d.avg_total_speed))
+            self._lbl_today_max_up.configure(text=_fmt_speed(d.max_up_speed))
+            self._lbl_today_max_dn.configure(text=_fmt_speed(d.max_down_speed))
+            h = d.active_seconds // 3600
+            m = (d.active_seconds % 3600) // 60
+            s = d.active_seconds % 60
+            self._lbl_today_time.configure(text=f"{h:02d}h {m:02d}m {s:02d}s")
+        else:
+            for lbl in (self._lbl_today_total, self._lbl_today_up,
+                        self._lbl_today_dn, self._lbl_today_avg,
+                        self._lbl_today_max_up, self._lbl_today_max_dn,
+                        self._lbl_today_time):
+                lbl.configure(text="—")
+
+        # Update Month
         m_ = self._repo.get_monthly(today.year, today.month)
-        self._lbl_sum_total.configure(text=_fmt_bytes(m_.total_bytes))
-        self._lbl_sum_up.configure(text=_fmt_bytes(m_.bytes_sent))
-        self._lbl_sum_dn.configure(text=_fmt_bytes(m_.bytes_recv))
-        self._lbl_sum_peak_up.configure(text=_fmt_speed(m_.max_up_speed))
-        self._lbl_sum_peak_dn.configure(text=_fmt_speed(m_.max_down_speed))
-        self._lbl_sum_days.configure(text=str(m_.days_tracked))
+        self._lbl_month_total.configure(text=_fmt_bytes(m_.total_bytes))
+        self._lbl_month_up.configure(text=_fmt_bytes(m_.bytes_sent))
+        self._lbl_month_dn.configure(text=_fmt_bytes(m_.bytes_recv))
+        self._lbl_month_peak_up.configure(text=_fmt_speed(m_.max_up_speed))
+        self._lbl_month_peak_dn.configure(text=_fmt_speed(m_.max_down_speed))
+        self._lbl_month_days.configure(text=str(m_.days_tracked))
 
-        # Update Doughnut Chart
-        self._refresh_doughnut(m_.bytes_recv, m_.bytes_sent)
+        # Update Charts
+        self._refresh_charts(today)
 
-        # Update Daily Table
-        self._refresh_daily_table()
-
-    def _refresh_doughnut(self, dn_bytes: int, up_bytes: int) -> None:
+    def _refresh_charts(self, today: date) -> None:
         # Clear existing charts
         for widget in self._chart_frame.winfo_children():
             widget.destroy()
 
-        # If completely zero, fake some data to show a grey ring
-        if dn_bytes == 0 and up_bytes == 0:
-            sizes = [1]
-            colors = ["#333333"]
-            labels = ["No Data"]
-        else:
-            sizes = [dn_bytes, up_bytes]
-            colors = [ACCENT_DN, ACCENT_UP]
-            labels = ["", ""]
+        start_date = today - timedelta(days=29)
+        history = self._repo.get_range(start_date, today)
 
-        fig = Figure(figsize=(4, 4), dpi=100, facecolor=BG_SURFACE)
+        # Matplotlib Figure
+        fig = Figure(figsize=(5, 4), dpi=100, facecolor=BG_CARD)
         ax = fig.add_subplot(111)
-        ax.set_facecolor(BG_SURFACE)
+        ax.set_facecolor(BG_CARD)
 
-        # Plot Doughnut Chart
-        wedges, texts = ax.pie(
-            sizes, labels=labels, colors=colors,
-            startangle=90, counterclock=False,
-            wedgeprops=dict(width=0.4, edgecolor=BG_SURFACE)
-        )
+        # Style tweaks
+        ax.spines['bottom'].set_color('gray')
+        ax.spines['top'].set_color(BG_CARD)
+        ax.spines['right'].set_color(BG_CARD)
+        ax.spines['left'].set_color('gray')
+        ax.tick_params(axis='x', colors='gray')
+        ax.tick_params(axis='y', colors='gray')
 
-        # Add center text
-        ax.text(
-            0, 0, "DATA RATIO", ha='center', va='center',
-            fontsize=12, color='gray', fontweight='bold'
-        )
+        days = []
+        down_data = []
+        up_data = []
 
+        # Fill missing days with 0
+        history_dict = {d.day: d for d in history}
+
+        for i in range(30):
+            d = start_date + timedelta(days=i)
+            days.append(d.strftime("%d"))
+            if d in history_dict:
+                # Convert to MB for display
+                down_data.append(history_dict[d].bytes_recv / (1024 * 1024))
+                up_data.append(history_dict[d].bytes_sent / (1024 * 1024))
+            else:
+                down_data.append(0)
+                up_data.append(0)
+
+        # Plot stacked bar chart
+        ax.bar(
+            days,
+            down_data,
+            label='Download (MB)',
+            color=ACCENT_DN,
+            alpha=0.8)
+        ax.bar(
+            days,
+            up_data,
+            bottom=down_data,
+            label='Upload (MB)',
+            color=ACCENT_UP,
+            alpha=0.8)
+
+        # Only show a few x-axis labels to avoid crowding
+        x_ticks = [i for i in range(0, 30, 5)]
+        ax.set_xticks(x_ticks)
+        ax.set_xticklabels([days[i] for i in x_ticks])
+        ax.set_ylabel('Data (MB)', color='gray')
+
+        fig.legend(
+            loc="upper right",
+            facecolor=BG_CARD,
+            edgecolor='none',
+            labelcolor='white')
         fig.tight_layout()
+
         canvas = FigureCanvasTkAgg(fig, master=self._chart_frame)
         canvas.draw()
         canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
-
-    def _refresh_daily_table(self) -> None:
-        # Clear existing items
-        for item in self._tree.get_children():
-            self._tree.delete(item)
-
-        today = date.today()
-        start_date = today - timedelta(days=30)
-        history = self._repo.get_range(start_date, today)
-
-        # Sort descending by date (newest top)
-        history.sort(key=lambda d: d.day, reverse=True)
-
-        for d in history:
-            self._tree.insert(
-                "", tk.END,
-                values=(
-                    d.day.strftime("%Y-%m-%d"),
-                    _fmt_bytes(d.bytes_recv),
-                    _fmt_bytes(d.bytes_sent),
-                    _fmt_bytes(d.total_bytes)
-                )
-            )
 
     # ── Export CSV ───────────────────────────────────────────────────────────
 
