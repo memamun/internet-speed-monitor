@@ -35,7 +35,7 @@ jobs:
         
     - name: Build Installer with Inno Setup
       run: |
-        "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" setup.iss
+        & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" setup.iss
 
         
     - name: Publish GitHub Release
