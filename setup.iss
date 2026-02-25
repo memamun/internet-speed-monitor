@@ -21,6 +21,9 @@ ArchitecturesInstallIn64BitMode=x64
 ; Privilege requirements
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
+CloseApplications=yes
+RestartApplications=yes
+AppMutex=SpeedMonitorMutex
 
 ; Wizard styling
 WizardStyle=modern
@@ -53,3 +56,6 @@ Name: "{userstartup}\SpeedMonitor"; Filename: "{app}\SpeedMonitor.exe"; Tasks: s
 [Run]
 ; Run after install
 Filename: "{app}\SpeedMonitor.exe"; Description: "{cm:LaunchProgram,SpeedMonitor}"; Flags: nowait postinstall skipifsilent
+
+[UninstallRun]
+Filename: "{cmd}"; Parameters: "/C taskkill /F /IM SpeedMonitor.exe /T"; RunOnceId: "KillProcess"; Flags: runhidden

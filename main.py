@@ -6,6 +6,7 @@ Bootstraps the layered architecture:
 """
 
 import sys
+import ctypes
 from pathlib import Path
 
 # Ensure project root is on sys.path (for package imports)
@@ -21,6 +22,17 @@ from presentation.widgets.taskbar_widget import TaskbarWidget  # noqa: E402
 
 
 def main() -> None:
+    # Mutex for Inno Setup (CloseApplications detection)
+    mutex_name = "SpeedMonitorMutex"
+    kernel32 = ctypes.windll.kernel32
+    mutex = kernel32.CreateMutexW(None, False, mutex_name)
+    last_error = kernel32.GetLastError()
+    
+    # 183 = ERROR_ALREADY_EXISTS
+    if last_error == 183:
+        print("SpeedMonitor is already running.")
+        sys.exit(0)
+
     print()
     print("SpeedMonitor")
     print("=" * 40)
