@@ -43,3 +43,10 @@ python main.py
 - **Taskbar Widget**: Will embed automatically.
 - **Statistics**: Right-click the widget and select "Usage Statistics".
 - **Exit**: Right-click the widget and select "Exit".
+
+## Recent Updates (Merged UI Features)
+
+- **UI Redesign**: Restored preferred font and layout for the taskbar widget. Redesigned the settings window with a modern, premium dark theme.
+- **Floating Widget**: Enabled the floating widget to run concurrently with the taskbar widget.
+- **Visual Tweaks**: Matched DU Meter arrow icons (solid, block-style arrows '⬇' and '⬆') and reordered the display to mirror DU Meter's layout (download above upload).
+
