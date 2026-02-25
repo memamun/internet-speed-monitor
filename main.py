@@ -13,10 +13,11 @@ _ROOT = Path(__file__).resolve().parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from infrastructure.database.sqlite_usage_repository import SqliteUsageRepository
-from infrastructure.system.network_provider import NetworkProvider
-from application.services.speed_monitor_service import SpeedMonitorService
-from presentation.widgets.taskbar_widget import TaskbarWidget
+from application.services.speed_monitor_service import SpeedMonitorService  # noqa: E402
+from infrastructure.database.sqlite_usage_repository import \
+    SqliteUsageRepository  # noqa: E402
+from infrastructure.system.network_provider import NetworkProvider  # noqa: E402
+from presentation.widgets.taskbar_widget import TaskbarWidget  # noqa: E402
 
 
 def main() -> None:

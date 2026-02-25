@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import time
 import threading
+import time
 from datetime import date
 from typing import Callable, Optional
 
@@ -22,11 +22,10 @@ class SpeedMonitorService:
         self,
         network: NetworkProvider,
         repo: UsageRepository,
-        on_speed_update: Optional[Callable[[SpeedSnapshot], None]] = None,
     ) -> None:
         self._net = network
         self._repo = repo
-        self._on_speed_update = on_speed_update
+        self._subscribers: list[Callable[[SpeedSnapshot], None]] = []
 
         self._running = False
         self._thread: Optional[threading.Thread] = None
@@ -60,6 +59,14 @@ class SpeedMonitorService:
         self._running = False
         self._flush()  # final flush
 
+    def subscribe(self, callback: Callable[[SpeedSnapshot], None]) -> None:
+        if callback not in self._subscribers:
+            self._subscribers.append(callback)
+
+    def unsubscribe(self, callback: Callable[[SpeedSnapshot], None]) -> None:
+        if callback in self._subscribers:
+            self._subscribers.remove(callback)
+
     @property
     def today_usage(self) -> DailyUsage:
         return DailyUsage(
@@ -78,8 +85,11 @@ class SpeedMonitorService:
             try:
                 snap = self._net.snapshot()
                 self._accumulate(snap)
-                if self._on_speed_update:
-                    self._on_speed_update(snap)
+                for cb in self._subscribers:
+                    try:
+                        cb(snap)
+                    except Exception:
+                        pass
             except Exception:
                 pass
             time.sleep(1)

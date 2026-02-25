@@ -64,8 +64,10 @@ class TaskbarHelper:
         self.h_taskbar = user32.FindWindowW("Shell_TrayWnd", None) or 0
         if not self.h_taskbar:
             return
-        self.h_notify = user32.FindWindowExW(self.h_taskbar, None, "TrayNotifyWnd", None) or 0
-        self.h_start = user32.FindWindowExW(self.h_taskbar, None, "Start", None) or 0
+        self.h_notify = user32.FindWindowExW(
+            self.h_taskbar, None, "TrayNotifyWnd", None) or 0
+        self.h_start = user32.FindWindowExW(
+            self.h_taskbar, None, "Start", None) or 0
 
     @property
     def found(self) -> bool:

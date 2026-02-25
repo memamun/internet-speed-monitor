@@ -6,9 +6,9 @@ the Application layer (SpeedMonitorService).
 
 from __future__ import annotations
 
-import sys
 import atexit
 import signal
+import sys
 import threading
 import tkinter as tk
 from typing import TYPE_CHECKING
@@ -16,8 +16,8 @@ from typing import TYPE_CHECKING
 import pystray
 from PIL import Image, ImageDraw
 
-from infrastructure.system.windows_taskbar import TaskbarHelper
 from domain.entities.network_usage import SpeedSnapshot
+from infrastructure.system.windows_taskbar import TaskbarHelper
 
 if TYPE_CHECKING:
     from application.services.speed_monitor_service import SpeedMonitorService
@@ -81,7 +81,7 @@ class TaskbarWidget:
         signal.signal(signal.SIGINT, lambda *_: self.exit_app())
 
         # Wire the service callback
-        self._service._on_speed_update = self._on_speed
+        self._service.subscribe(self._on_speed)
         self._service.start()
 
         # System tray icon
@@ -103,13 +103,20 @@ class TaskbarWidget:
     def _position(self) -> None:
         if not self._tb.found:
             return
-        x, y = self._tb.calc_position(self.WIDGET_WIDTH, self.WIDGET_HEIGHT, self.embedded)
+        x, y = self._tb.calc_position(
+            self.WIDGET_WIDTH, self.WIDGET_HEIGHT, self.embedded)
         if self.embedded:
-            self._tb.move(self.hwnd, x, y, self.WIDGET_WIDTH, self.WIDGET_HEIGHT)
+            self._tb.move(
+                self.hwnd,
+                x,
+                y,
+                self.WIDGET_WIDTH,
+                self.WIDGET_HEIGHT)
         else:
             from infrastructure.system.windows_taskbar import get_rect
             tb_l, tb_t, *_ = get_rect(self._tb.h_taskbar)
-            self.root.geometry(f"{self.WIDGET_WIDTH}x{self.WIDGET_HEIGHT}+{x}+{tb_t + y}")
+            self.root.geometry(
+                f"{self.WIDGET_WIDTH}x{self.WIDGET_HEIGHT}+{x}+{tb_t + y}")
 
     def _setup_overlay(self) -> None:
         self.root.attributes("-topmost", True)
@@ -138,7 +145,7 @@ class TaskbarWidget:
             pass
         self.root.after(1000, self._adjust_job)
 
-    # ── UI ────────────────────────────────────────────────────────────────────
+    # ── UI ──────────────────────────────────────────────────────────────────
 
     def _create_ui(self) -> None:
         self.root.configure(bg=self.TRANS_COLOR)
@@ -172,10 +179,21 @@ class TaskbarWidget:
         self.dl_val.grid(row=1, column=1, sticky="w", padx=(0, 2), pady=0)
 
         # Context menu
-        self.menu = tk.Menu(self.root, tearoff=0, bg="#2b2b2b", fg="#ffffff",
-                            activebackground="#4d4d4d", activeforeground="#ffffff",
-                            font=("Segoe UI", 9), relief="flat", borderwidth=1)
-        self.menu.add_command(label="Usage Statistics", command=self._show_stats)
+        self.menu = tk.Menu(
+            self.root,
+            tearoff=0,
+            bg="#2b2b2b",
+            fg="#ffffff",
+            activebackground="#4d4d4d",
+            activeforeground="#ffffff",
+            font=(
+                "Segoe UI",
+                9),
+            relief="flat",
+            borderwidth=1)
+        self.menu.add_command(
+            label="Usage Statistics",
+            command=self._show_stats)
         self.menu.add_separator()
         self.menu.add_command(label="Exit", command=self.exit_app)
 
@@ -187,7 +205,7 @@ class TaskbarWidget:
 
     def _show_stats(self) -> None:
         from presentation.windows.statistics_window import StatisticsWindow
-        StatisticsWindow(self.root, self._repo)
+        StatisticsWindow(self.root, self._service, self._repo)
 
     # ── Speed callback ───────────────────────────────────────────────────────
 
@@ -214,7 +232,7 @@ class TaskbarWidget:
         except tk.TclError:
             pass
 
-    # ── System tray ───────────────────────────────────────────────────────────
+    # ── System tray ─────────────────────────────────────────────────────────
 
     def _setup_tray(self) -> None:
         """Create a system tray icon with menu options."""
@@ -224,7 +242,8 @@ class TaskbarWidget:
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("Exit", self._tray_exit),
         )
-        self._tray_icon = pystray.Icon("SpeedMonitor", icon_img, "SpeedMonitor", menu)
+        self._tray_icon = pystray.Icon(
+            "SpeedMonitor", icon_img, "SpeedMonitor", menu)
         threading.Thread(target=self._tray_icon.run, daemon=True).start()
 
     @staticmethod
@@ -237,7 +256,7 @@ class TaskbarWidget:
         # Rounded dark background
         r = 12
         draw.rounded_rectangle([0, 0, size - 1, size - 1], radius=r,
-                                fill="#1e1e1e")
+                               fill="#1e1e1e")
 
         # Thin separator line
         draw.line([(10, 31), (54, 31)], fill="#333333", width=1)
@@ -258,7 +277,7 @@ class TaskbarWidget:
     def _tray_exit(self, icon=None, item=None) -> None:
         self.root.after(0, self.exit_app)
 
-    # ── Lifecycle ─────────────────────────────────────────────────────────────
+    # ── Lifecycle ───────────────────────────────────────────────────────────
 
     def _cleanup(self) -> None:
         self._service.stop()
