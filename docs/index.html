@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SpeedMonitor — Windows Taskbar Network Monitor</title>
+  <meta name="description" content="A lightweight Windows taskbar widget showing real-time upload & download speeds, like DU Meter. Built with Python."/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0d1117;
+      color: #e6edf3;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+    .badge { display: inline-block; background: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 2px 10px; font-size: 0.75rem; color: #8b949e; margin: 0.25rem; }
+    .hero { text-align: center; max-width: 700px; }
+    .hero h1 { font-size: 3rem; font-weight: 700; background: linear-gradient(135deg, #58a6ff, #3fb950); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 1rem; }
+    .hero p { color: #8b949e; font-size: 1.1rem; line-height: 1.7; margin-bottom: 2rem; }
+    .install-box {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      padding: 1.5rem 2rem;
+      margin-bottom: 2rem;
+      text-align: left;
+    }
+    .install-box label { font-size: 0.8rem; color: #8b949e; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 0.75rem; }
+    .code-line {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      background: #0d1117;
+      border: 1px solid #21262d;
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      font-family: 'Consolas', 'SF Mono', monospace;
+      font-size: 0.9rem;
+    }
+    .code-line code { flex: 1; color: #79c0ff; }
+    .copy-btn {
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      color: #8b949e;
+      cursor: pointer;
+      padding: 4px 10px;
+      font-size: 0.75rem;
+      transition: all 0.2s;
+    }
+    .copy-btn:hover { background: #30363d; color: #e6edf3; }
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+      width: 100%;
+      max-width: 700px;
+    }
+    .feat {
+      background: #161b22;
+      border: 1px solid #21262d;
+      border-radius: 10px;
+      padding: 1rem;
+      text-align: center;
+    }
+    .feat .icon { font-size: 1.8rem; margin-bottom: 0.5rem; }
+    .feat h3 { font-size: 0.9rem; color: #e6edf3; margin-bottom: 0.25rem; }
+    .feat p { font-size: 0.78rem; color: #8b949e; }
+    .links { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; }
+    .btn {
+      display: inline-block;
+      padding: 0.65rem 1.5rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: opacity 0.2s;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-primary { background: #238636; color: #fff; }
+    .btn-secondary { background: #21262d; color: #e6edf3; border: 1px solid #30363d; }
+    footer { margin-top: 3rem; color: #484f58; font-size: 0.8rem; }
+  </style>
+</head>
+<body>
+  <div class="hero">
+    <h1>⚡ SpeedMonitor</h1>
+    <p>A lightweight Windows taskbar widget that shows real-time <strong style="color:#58a6ff">upload</strong> &amp; <strong style="color:#3fb950">download</strong> speeds — just like DU Meter.</p>
+    <div>
+      <span class="badge">Windows 10/11</span>
+      <span class="badge">Python</span>
+      <span class="badge">MIT License</span>
+    </div>
+  </div>
+
+  <br/>
+
+  <div class="install-box" style="max-width:700px;width:100%">
+    <label>⚡ One-line install (PowerShell)</label>
+    <div class="code-line">
+      <code id="cmd">irm memamun.github.io/internet-speed-monitor/install.ps1 | iex</code>
+      <button class="copy-btn" onclick="copy()">Copy</button>
+    </div>
+  </div>
+
+  <div class="features">
+    <div class="feat"><div class="icon">📡</div><h3>Live Speeds</h3><p>Updates every second</p></div>
+    <div class="feat"><div class="icon">🖥</div><h3>Taskbar Embed</h3><p>Sits inside the taskbar</p></div>
+    <div class="feat"><div class="icon">📊</div><h3>Statistics</h3><p>Daily & monthly charts</p></div>
+    <div class="feat"><div class="icon">🗄</div><h3>Persistent</h3><p>SQLite usage history</p></div>
+  </div>
+
+  <div class="links">
+    <a class="btn btn-primary" href="https://github.com/memamun/internet-speed-monitor/releases/latest">⬇ Download</a>
+    <a class="btn btn-secondary" href="https://github.com/memamun/internet-speed-monitor">GitHub →</a>
+  </div>
+
+  <footer>Made by Mamun Abdullah &nbsp;·&nbsp; MIT License</footer>
+
+  <script>
+    function copy() {
+      navigator.clipboard.writeText(document.getElementById('cmd').textContent);
+      event.target.textContent = 'Copied!';
+      setTimeout(() => event.target.textContent = 'Copy', 1500);
+    }
+  </script>
+</body>
+</html>
