@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+*.pyo
+usage_history.db
+usage_history.db-wal
+usage_history.db-shm
+.env

@@ -1,0 +1,214 @@
+"""SpeedMonitor — Taskbar Widget (Presentation layer).
+
+This module contains ONLY UI logic. All business logic is delegated to
+the Application layer (SpeedMonitorService).
+"""
+
+from __future__ import annotations
+
+import sys
+import atexit
+import signal
+import tkinter as tk
+from typing import TYPE_CHECKING
+
+from infrastructure.system.windows_taskbar import TaskbarHelper
+from domain.entities.network_usage import SpeedSnapshot
+
+if TYPE_CHECKING:
+    from application.services.speed_monitor_service import SpeedMonitorService
+    from domain.interfaces.usage_repository import UsageRepository
+
+
+class TaskbarWidget:
+    """Speed monitor widget embedded in the Windows taskbar (Win11 style)."""
+
+    WIDGET_WIDTH = 85
+    WIDGET_HEIGHT = 40
+    TRANS_COLOR = "#010101"
+    TRANS_COLOR_INT = 0x00010101
+    TEXT_COLOR = "#ffffff"
+    UL_COLOR = "#f39c12"
+    DL_COLOR = "#00e5ff"
+
+    def __init__(
+        self,
+        service: "SpeedMonitorService",
+        repo: "UsageRepository",
+    ) -> None:
+        self._service = service
+        self._repo = repo
+
+        self.root = tk.Tk()
+        self.root.title("SpeedMonitor")
+        self.running = True
+        self.embedded = False
+
+        self._tb = TaskbarHelper()
+        self._create_ui()
+
+        # Get native HWND
+        self.root.update()
+        self.hwnd = self._get_hwnd()
+
+        # Remove title bar / borders
+        self.root.overrideredirect(True)
+        self.root.update()
+        self.hwnd = self._get_hwnd()
+
+        # Hide from alt-tab
+        self._tb.apply_tool_window(self.hwnd)
+
+        # Attempt embedding
+        if self._tb.found:
+            self.embedded = self._tb.embed(self.hwnd)
+
+        if self.embedded:
+            self._tb.apply_transparency(self.hwnd, self.TRANS_COLOR_INT)
+            self._position()
+        else:
+            self._setup_overlay()
+
+        self._tb.show(self.hwnd)
+
+        atexit.register(self._cleanup)
+        signal.signal(signal.SIGINT, lambda *_: self.exit_app())
+
+        # Wire the service callback
+        self._service._on_speed_update = self._on_speed
+        self._service.start()
+
+        self._adjust_job()
+        self.root.protocol("WM_DELETE_WINDOW", self.exit_app)
+
+    # ── HWND helper ──────────────────────────────────────────────────────────
+
+    def _get_hwnd(self) -> int:
+        frame_id = self.root.wm_frame()
+        if frame_id and frame_id != "0x0":
+            return int(frame_id, 16)
+        return self.root.winfo_id()
+
+    # ── Positioning ──────────────────────────────────────────────────────────
+
+    def _position(self) -> None:
+        if not self._tb.found:
+            return
+        x, y = self._tb.calc_position(self.WIDGET_WIDTH, self.WIDGET_HEIGHT, self.embedded)
+        if self.embedded:
+            self._tb.move(self.hwnd, x, y, self.WIDGET_WIDTH, self.WIDGET_HEIGHT)
+        else:
+            from infrastructure.system.windows_taskbar import get_rect
+            tb_l, tb_t, *_ = get_rect(self._tb.h_taskbar)
+            self.root.geometry(f"{self.WIDGET_WIDTH}x{self.WIDGET_HEIGHT}+{x}+{tb_t + y}")
+
+    def _setup_overlay(self) -> None:
+        self.root.attributes("-topmost", True)
+        self.root.attributes("-transparentcolor", self.TRANS_COLOR)
+        self._position()
+
+    def _adjust_job(self) -> None:
+        if not self.running:
+            return
+        try:
+            self._position()
+            if self.embedded:
+                self._tb.show(self.hwnd)
+            else:
+                self._tb.ensure_topmost(self.hwnd)
+        except Exception:
+            pass
+        self.root.after(2000, self._adjust_job)
+
+    # ── UI ────────────────────────────────────────────────────────────────────
+
+    def _create_ui(self) -> None:
+        self.root.configure(bg=self.TRANS_COLOR)
+        self.root.geometry(f"{self.WIDGET_WIDTH}x{self.WIDGET_HEIGHT}")
+
+        container = tk.Frame(self.root, bg=self.TRANS_COLOR)
+        container.pack(expand=True)
+
+        sys_font = ("Segoe UI Semibold", 10)
+        arrow_fnt = ("Segoe UI Semibold", 9)
+
+        container.columnconfigure(0, weight=0)
+        container.columnconfigure(1, weight=0)
+
+        # Upload row
+        tk.Label(container, text="↑", font=arrow_fnt, fg=self.UL_COLOR,
+                 bg=self.TRANS_COLOR, bd=0, pady=0).grid(
+            row=0, column=0, sticky="e", padx=(2, 2), pady=0)
+        self.ul_val = tk.Label(container, text="0 B/s", font=sys_font,
+                               fg=self.TEXT_COLOR, bg=self.TRANS_COLOR,
+                               anchor="w", bd=0, pady=0)
+        self.ul_val.grid(row=0, column=1, sticky="w", padx=(0, 2), pady=0)
+
+        # Download row
+        tk.Label(container, text="↓", font=arrow_fnt, fg=self.DL_COLOR,
+                 bg=self.TRANS_COLOR, bd=0, pady=0).grid(
+            row=1, column=0, sticky="e", padx=(2, 2), pady=0)
+        self.dl_val = tk.Label(container, text="0 B/s", font=sys_font,
+                               fg=self.TEXT_COLOR, bg=self.TRANS_COLOR,
+                               anchor="w", bd=0, pady=0)
+        self.dl_val.grid(row=1, column=1, sticky="w", padx=(0, 2), pady=0)
+
+        # Context menu
+        self.menu = tk.Menu(self.root, tearoff=0, bg="#2b2b2b", fg="#ffffff",
+                            activebackground="#4d4d4d", activeforeground="#ffffff",
+                            font=("Segoe UI", 9), relief="flat", borderwidth=1)
+        self.menu.add_command(label="Usage Statistics", command=self._show_stats)
+        self.menu.add_separator()
+        self.menu.add_command(label="Exit", command=self.exit_app)
+
+        for w in (container, self.ul_val, self.dl_val):
+            w.bind("<Button-3>", self._show_menu)
+
+    def _show_menu(self, e: tk.Event) -> None:
+        self.menu.post(e.x_root, e.y_root)
+
+    def _show_stats(self) -> None:
+        from presentation.windows.statistics_window import StatisticsWindow
+        StatisticsWindow(self.root, self._repo)
+
+    # ── Speed callback ───────────────────────────────────────────────────────
+
+    @staticmethod
+    def _fmt(bps: int) -> str:
+        if bps >= 1024 ** 3:
+            return f"{bps / 1024**3:.2f} GB/s"
+        if bps >= 1024 ** 2:
+            return f"{bps / 1024**2:.2f} MB/s"
+        if bps >= 1024:
+            return f"{bps / 1024:.2f} KB/s"
+        return f"{bps:.0f}  B/s"
+
+    def _on_speed(self, snap: SpeedSnapshot) -> None:
+        try:
+            self.root.after(0, self._update_labels, snap)
+        except Exception:
+            pass
+
+    def _update_labels(self, snap: SpeedSnapshot) -> None:
+        try:
+            self.ul_val.config(text=self._fmt(snap.up_speed))
+            self.dl_val.config(text=self._fmt(snap.down_speed))
+        except tk.TclError:
+            pass
+
+    # ── Lifecycle ─────────────────────────────────────────────────────────────
+
+    def _cleanup(self) -> None:
+        self._service.stop()
+
+    def exit_app(self) -> None:
+        self.running = False
+        self._service.stop()
+        try:
+            self.root.destroy()
+        except Exception:
+            pass
+        sys.exit(0)
+
+    def run(self) -> None:
+        self.root.mainloop()
