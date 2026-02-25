@@ -14,10 +14,12 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
 from application.services.speed_monitor_service import SpeedMonitorService  # noqa: E402
+from application.services.configuration_service import ConfigurationService  # noqa: E402
 from infrastructure.database.sqlite_usage_repository import \
     SqliteUsageRepository  # noqa: E402
 from infrastructure.system.network_provider import NetworkProvider  # noqa: E402
 from presentation.widgets.taskbar_widget import TaskbarWidget  # noqa: E402
+from presentation.widgets.floating_widget import FloatingWidget  # noqa: E402
 
 
 def main() -> None:
@@ -28,15 +30,28 @@ def main() -> None:
     print()
 
     # 1. Infrastructure
+    config_service = ConfigurationService(app_data_dir=str(_ROOT))
     repo = SqliteUsageRepository(db_dir=_ROOT)
-    network = NetworkProvider()
+    network = NetworkProvider(config=config_service.config)
 
     # 2. Application
     service = SpeedMonitorService(network=network, repo=repo)
 
     # 3. Presentation
-    widget = TaskbarWidget(service=service, repo=repo)
-    widget.run()
+    if config_service.config.is_floating:
+        widget = FloatingWidget(
+            service=service, repo=repo, config_service=config_service)
+    else:
+        widget = TaskbarWidget(service=service, repo=repo,
+                               config_service=config_service)
+
+    try:
+        if hasattr(widget, 'run'):
+            widget.run()
+        else:
+            widget.root.mainloop()
+    except Exception as e:
+        print(f"Error starting widget: {e}")
 
 
 if __name__ == "__main__":

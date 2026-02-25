@@ -28,15 +28,21 @@ SWP_NOACTIVATE = 0x0010
 
 for fn, argt, rest in [
     (user32.FindWindowW, [wintypes.LPCWSTR, wintypes.LPCWSTR], wintypes.HWND),
-    (user32.FindWindowExW, [wintypes.HWND, wintypes.HWND, wintypes.LPCWSTR, wintypes.LPCWSTR], wintypes.HWND),
+    (user32.FindWindowExW, [wintypes.HWND, wintypes.HWND,
+     wintypes.LPCWSTR, wintypes.LPCWSTR], wintypes.HWND),
     (user32.SetParent, [wintypes.HWND, wintypes.HWND], wintypes.HWND),
     (user32.GetWindowLongW, [wintypes.HWND, ctypes.c_int], ctypes.c_long),
-    (user32.SetWindowLongW, [wintypes.HWND, ctypes.c_int, ctypes.c_long], ctypes.c_long),
-    (user32.MoveWindow, [wintypes.HWND, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, wintypes.BOOL], wintypes.BOOL),
-    (user32.GetWindowRect, [wintypes.HWND, ctypes.POINTER(wintypes.RECT)], wintypes.BOOL),
+    (user32.SetWindowLongW, [wintypes.HWND,
+     ctypes.c_int, ctypes.c_long], ctypes.c_long),
+    (user32.MoveWindow, [wintypes.HWND, ctypes.c_int, ctypes.c_int,
+     ctypes.c_int, ctypes.c_int, wintypes.BOOL], wintypes.BOOL),
+    (user32.GetWindowRect, [wintypes.HWND,
+     ctypes.POINTER(wintypes.RECT)], wintypes.BOOL),
     (user32.ShowWindow, [wintypes.HWND, ctypes.c_int], wintypes.BOOL),
-    (user32.SetWindowPos, [wintypes.HWND, wintypes.HWND, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, wintypes.UINT], wintypes.BOOL),
-    (user32.SetLayeredWindowAttributes, [wintypes.HWND, wintypes.DWORD, wintypes.BYTE, wintypes.DWORD], wintypes.BOOL),
+    (user32.SetWindowPos, [wintypes.HWND, wintypes.HWND, ctypes.c_int,
+     ctypes.c_int, ctypes.c_int, ctypes.c_int, wintypes.UINT], wintypes.BOOL),
+    (user32.SetLayeredWindowAttributes, [
+     wintypes.HWND, wintypes.DWORD, wintypes.BYTE, wintypes.DWORD], wintypes.BOOL),
     (user32.GetParent, [wintypes.HWND], wintypes.HWND),
     (user32.GetForegroundWindow, [], wintypes.HWND),
 ]:
