@@ -11,3 +11,4 @@ usage_history.db-shm
 build/
 dist/
 *.spec.bak
+build_installer/
