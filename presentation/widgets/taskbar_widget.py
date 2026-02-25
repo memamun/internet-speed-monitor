@@ -133,11 +133,15 @@ class TaskbarWidget:
                 if self._hidden:
                     self._tb.show(self.hwnd)
                     self._hidden = False
+                
+                # Update position based on taskbar location
                 self._position()
-                if self.embedded:
-                    self._tb.show(self.hwnd)
-                else:
+                
+                # If not embedded, we must ensure it stays on top of the desktop Shell
+                if not self.embedded:
                     self._tb.ensure_topmost(self.hwnd)
+                elif self.embedded:
+                    self._tb.show(self.hwnd)
         except Exception:
             pass
         self.root.after(1000, self._adjust_job)

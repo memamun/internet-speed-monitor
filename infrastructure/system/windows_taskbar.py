@@ -64,10 +64,14 @@ class TaskbarHelper:
         self.h_taskbar: int = 0
         self.h_notify: int = 0
         self.h_start: int = 0
+        self.h_progman: int = 0
+        self.h_workerw: int = 0
         self._find()
 
     def _find(self) -> None:
         self.h_taskbar = user32.FindWindowW("Shell_TrayWnd", None) or 0
+        self.h_progman = user32.FindWindowW("Progman", "Program Manager") or 0
+        self.h_workerw = user32.FindWindowW("WorkerW", None) or 0
         if not self.h_taskbar:
             return
         self.h_notify = user32.FindWindowExW(
@@ -134,8 +138,10 @@ class TaskbarHelper:
         user32.ShowWindow(hwnd, 5)
 
     def ensure_topmost(self, hwnd: int) -> None:
+        """Force the window to the top of the Z-order if relevant windows have focus."""
         fg = user32.GetForegroundWindow()
-        if fg == self.h_taskbar:
+        # include desktop windows in the check
+        if fg in (self.h_taskbar, self.h_progman, self.h_workerw):
             user32.SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0,
                                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE)
 
@@ -145,7 +151,7 @@ class TaskbarHelper:
     def is_fullscreen_active(self) -> bool:
         """Check if the foreground window is fullscreen (taskbar hidden)."""
         fg = user32.GetForegroundWindow()
-        if not fg or fg == self.h_taskbar:
+        if not fg or fg == self.h_taskbar or fg == self.h_progman or fg == self.h_workerw:
             return False
         try:
             fl, ft, fr, fb = get_rect(fg)
