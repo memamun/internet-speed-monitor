@@ -50,3 +50,7 @@ python main.py
 - **Floating Widget**: Enabled the floating widget to run concurrently with the taskbar widget.
 - **Visual Tweaks**: Matched DU Meter arrow icons (solid, block-style arrows '⬇' and '⬆') and reordered the display to mirror DU Meter's layout (download above upload).
 
+## Bug Fixes
+
+- **Usage Statistics Window**: Fixed an issue where the Usage Statistics window failed to open when running from the installed executable. This was resolved by adding `presentation.windows.statistics_window` to PyInstaller's `hiddenimports` configuration, as it is loaded dynamically at runtime.
+
