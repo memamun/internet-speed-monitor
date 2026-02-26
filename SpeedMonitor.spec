@@ -25,6 +25,7 @@ a = Analysis(
         'win32con',
         'win32gui',
         'pywintypes',
+        'presentation.windows.statistics_window',
     ],
     hookspath=[],
     hooksconfig={},
