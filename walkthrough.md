@@ -53,4 +53,5 @@ python main.py
 ## Bug Fixes
 
 - **Usage Statistics Window**: Fixed an issue where the Usage Statistics window failed to open when running from the installed executable. This was resolved by adding `presentation.windows.statistics_window` to PyInstaller's `hiddenimports` configuration, as it is loaded dynamically at runtime.
+- **ModuleNotFoundError in Executable**: Fixed an issue where PyInstaller's optimization excluded the `html` and `unittest` standard libraries, which are required by `matplotlib` (via `pyparsing`). Removed these from the `excludes` list in `SpeedMonitor.spec`.
 

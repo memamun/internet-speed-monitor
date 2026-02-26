@@ -250,8 +250,21 @@ class TaskbarWidget:
         self.menu.post(e.x_root, e.y_root)
 
     def _show_stats(self) -> None:
-        from presentation.windows.statistics_window import StatisticsWindow
-        StatisticsWindow(self.root, self._service, self._repo)
+        try:
+            from presentation.windows.statistics_window import StatisticsWindow
+            StatisticsWindow(self.root, self._service, self._repo)
+        except Exception as e:
+            import traceback
+            import sys
+            import os
+            
+            # Write error to a log file in the same directory as the executable
+            log_path = os.path.join(os.path.dirname(sys.executable), "error.log")
+            if not getattr(sys, 'frozen', False):
+                log_path = "error.log"
+                
+            with open(log_path, "a", encoding="utf-8") as f:
+                f.write(f"Error opening statistics window:\n{traceback.format_exc()}\n")
 
     # ── Speed callback ───────────────────────────────────────────────────────
 
