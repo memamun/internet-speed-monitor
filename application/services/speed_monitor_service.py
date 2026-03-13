@@ -57,7 +57,7 @@ class SpeedMonitorService:
 
     def stop(self) -> None:
         self._running = False
-        self._flush()  # final flush
+        self.flush()  # final flush
 
     def subscribe(self, callback: Callable[[SpeedSnapshot], None]) -> None:
         if callback not in self._subscribers:
@@ -98,7 +98,7 @@ class SpeedMonitorService:
         now = date.today()
         if now != self._today:
             # Day rolled over — flush yesterday and reset
-            self._flush()
+            self.flush()
             self._today = now
             self._bytes_sent = 0
             self._bytes_recv = 0
@@ -114,10 +114,10 @@ class SpeedMonitorService:
 
         self._flush_counter += 1
         if self._flush_counter >= _FLUSH_INTERVAL:
-            self._flush()
+            self.flush()
             self._flush_counter = 0
 
-    def _flush(self) -> None:
+    def flush(self) -> None:
         try:
             self._repo.upsert_daily(self.today_usage)
         except Exception:

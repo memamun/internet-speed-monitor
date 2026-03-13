@@ -80,8 +80,11 @@ class StatisticsWindow:
         self._win.attributes("-alpha", 0.0)  # Make fully transparent initially
         self._win.protocol("WM_DELETE_WINDOW", self._on_closing)
 
+        self._auto_refresh_id: str | None = None
+
         self._build()
         self._refresh()
+        self._schedule_auto_refresh()
 
         self._service.subscribe(self._on_live_speed)
 
@@ -107,6 +110,9 @@ class StatisticsWindow:
             self._win.focus_force()
 
     def _on_closing(self) -> None:
+        if self._auto_refresh_id is not None:
+            self._win.after_cancel(self._auto_refresh_id)
+            self._auto_refresh_id = None
         self._service.unsubscribe(self._on_live_speed)
         self._fade_out()
 
@@ -489,7 +495,17 @@ class StatisticsWindow:
 
     # ── Data & Charts ───────────────────────────────────────────────────────
 
+    def _schedule_auto_refresh(self) -> None:
+        """Re-run _refresh every 5 seconds while the window is open."""
+        self._refresh()
+        self._auto_refresh_id = self._win.after(5000, self._schedule_auto_refresh)
+
     def _refresh(self) -> None:
+        # Ensure the latest in-memory data is written to DB before reading
+        try:
+            self._service.flush()
+        except Exception:
+            pass
         today = date.today()
 
         # Update Today
