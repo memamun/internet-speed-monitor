@@ -1,7 +1,7 @@
 """Statistics Window — Presentation layer.
 
-Premium dark-themed window displaying daily, monthly, and custom-range
-network usage statistics for SpeedMonitor using CustomTkinter and Matplotlib.
+Premium dark-themed window displaying daily and monthly
+network usage statistics for SpeedMonitor using CustomTkinter.
 """
 
 from __future__ import annotations
@@ -13,8 +13,7 @@ from tkinter import filedialog, messagebox
 from typing import TYPE_CHECKING
 
 import customtkinter as ctk
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from matplotlib.figure import Figure
+
 
 if TYPE_CHECKING:
     from application.services.speed_monitor_service import SpeedMonitorService
@@ -176,11 +175,9 @@ class StatisticsWindow:
 
         self._tab_today = self._tabview.add("Today")
         self._tab_month = self._tabview.add("This Month")
-        self._tab_trends = self._tabview.add("Trends (30 Days)")
 
         self._build_today_tab()
         self._build_month_tab()
-        self._build_trends_tab()
 
         # ── Footer ──────────────────────────────────────────────────────────
         footer = ctk.CTkFrame(
@@ -448,12 +445,7 @@ class StatisticsWindow:
         days_card.pack(fill=tk.X, pady=(0, 10), padx=10)
         self._lbl_month_days = self._stat_row(days_card, "Days tracked", 0)
 
-    def _build_trends_tab(self) -> None:
-        self._chart_frame = ctk.CTkFrame(
-            self._tab_trends, fg_color="transparent")
-        self._chart_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-        # Plot will be rendered in _refresh_charts()
 
     def _stat_row(
             self,
@@ -537,79 +529,7 @@ class StatisticsWindow:
         self._lbl_month_peak_dn.configure(text=_fmt_speed(m_.max_down_speed))
         self._lbl_month_days.configure(text=str(m_.days_tracked))
 
-        # Update Charts
-        self._refresh_charts(today)
 
-    def _refresh_charts(self, today: date) -> None:
-        # Clear existing charts
-        for widget in self._chart_frame.winfo_children():
-            widget.destroy()
-
-        start_date = today - timedelta(days=29)
-        history = self._repo.get_range(start_date, today)
-
-        # Matplotlib Figure
-        fig = Figure(figsize=(5, 4), dpi=100, facecolor=BG_CARD)
-        ax = fig.add_subplot(111)
-        ax.set_facecolor(BG_CARD)
-
-        # Style tweaks
-        ax.spines['bottom'].set_color('gray')
-        ax.spines['top'].set_color(BG_CARD)
-        ax.spines['right'].set_color(BG_CARD)
-        ax.spines['left'].set_color('gray')
-        ax.tick_params(axis='x', colors='gray')
-        ax.tick_params(axis='y', colors='gray')
-
-        days = []
-        down_data = []
-        up_data = []
-
-        # Fill missing days with 0
-        history_dict = {d.day: d for d in history}
-
-        for i in range(30):
-            d = start_date + timedelta(days=i)
-            days.append(d.strftime("%d"))
-            if d in history_dict:
-                # Convert to MB for display
-                down_data.append(history_dict[d].bytes_recv / (1024 * 1024))
-                up_data.append(history_dict[d].bytes_sent / (1024 * 1024))
-            else:
-                down_data.append(0)
-                up_data.append(0)
-
-        # Plot stacked bar chart
-        ax.bar(
-            days,
-            down_data,
-            label='Download (MB)',
-            color=ACCENT_DN,
-            alpha=0.8)
-        ax.bar(
-            days,
-            up_data,
-            bottom=down_data,
-            label='Upload (MB)',
-            color=ACCENT_UP,
-            alpha=0.8)
-
-        # Only show a few x-axis labels to avoid crowding
-        x_ticks = [i for i in range(0, 30, 5)]
-        ax.set_xticks(x_ticks)
-        ax.set_xticklabels([days[i] for i in x_ticks])
-        ax.set_ylabel('Data (MB)', color='gray')
-
-        fig.legend(
-            loc="upper right",
-            facecolor=BG_CARD,
-            edgecolor='none',
-            labelcolor='white')
-        fig.tight_layout()
-
-        canvas = FigureCanvasTkAgg(fig, master=self._chart_frame)
-        canvas.draw()
-        canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
 
     # ── Export CSV ───────────────────────────────────────────────────────────
 
